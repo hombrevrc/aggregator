@@ -1,0 +1,123 @@
+#+TITLE: AGGREGATOR
+
+* What is this?
+
+=AGGREGATOR= is an MT4 (MetaTrader4) backtest report data aggregator &
+optimizer for multi-strategy, multi-instrument backtesting. It is a
+tool for post-processing a number of MT4 backtests covering several
+automatic trading strategies on multiple instruments and aggregate
+them into a single report to model how a composite (portfolio) of all
+trading activity on a single account would have been like. It also
+performs the calculations for [[https://en.wikipedia.org/wiki/Kelly_criterion][Kelly-optimizing]] the portfolio.
+
+I wrote this application in 2011 while playing with Clojure. It is
+overly simplistic and should NOT be taken as a professional tool for
+aid of investment decisions. *Any results obtained are for
+entertainment only!* NB: I have long since moved to other modeling and
+'quant' methods concerning my financial activities, mostly based on R
+and quantstrat. In fact, I do not recommend using this application for
+anything other than stealing code from it (see LICENSE).
+
+* Usage
+
+To run =AGGREGATOR=, you need Clojure. Get the JAR from
+[[http://clojure.org]] (first download the Zip, then unpack and copy
+=clojure-VER.jar= outside of it). Place it in the root of this repo
+named =clojure.jar=.
+
+=AGGREGATOR= is a batch program expecting to be able to read both
+input data and configuration from files.
+
+AWK and Gnuplot are expected to be found on the system.
+
+** Input data
+
+Input consists of MetaTrader4 backtests of certain single-instrument
+strategies run on certain instruments. They should all cover the same
+time period, otherwise their combination won't be especially
+meaningful.
+
+The backtests should be as exported from the MT4 backtester: a HTML
+file (.htm) with the name of the instrument. The backtester also
+produces a graph of equity/balance over time (.gif), which is not
+used.
+
+The backtest data must be in files =data/<strategy>/<instrument>.htm=
+where =<strategy>= is any number of folders named after your
+backtested strategies, and the backtests of those strategies on each
+instrument reside in =<instrument>.htm=.
+
+It is assumed that all backtests are done with a starting capital of
+10,000 USD. If this is not the case, edit =report2csv.awk=.
+
+See the content of the =data/= directory for example input data.
+
+** Configuration
+
+Each run of =AGGREGATOR= is based on a certain named
+configuration. The configuration is a combination of the backtests
+with lots weighting for each strategy and instrument in each trading
+direction (long and short).
+
+A configuration resides in the file =conf/confname.conf= and should
+consit of lines of the format
+
+: <strategy> <instrument> <long-lots> <short-lots>
+
+where =<strategy>= and =<instrument>= correspond to those discussed
+above, and the lots are integer or float numbers providing
+weighting. Just leave them both at 1 for a start.
+
+A line specifying a global lot multiplier can also be provided:
+
+: lots-multiplier <mul>
+
+If used, this must be the first non-comment line in the configuration
+file.
+
+See the content under =conf/= for examples.
+
+** Running
+
+First, the =.htm= backtest data has to be converted to =.csv=. Use the
+script =convert-all.sh= to convert all backtest data in one
+batch.
+
+Then, you can use the wrapper script =aggregator.sh= to run one
+particular configuration:
+
+: ./aggregator.sh <confname>
+
+where =<confname>= corresponds to a configuration stored in
+=conf/confname.conf=.
+
+Or you can aggregate all configurations present under =conf/= via the
+=runall.sh= script.
+
+* Results
+
+Running =AGGREGATOR= will result in the =reports/= directory being
+populated with output. A group of four files are produced for each
+configuration:
+
+- <confname>.csv
+- <confname>.html
+- <confname>.png
+- <confname>.txt
+
+Open the =.html= directly with your favourite browser; ignore
+everything else. (The =.csv= and =.txt= are intermediates; the =.png=
+is included in the =.html=.)
+
+Besides the aggregated hypothetical trading report, a Kelly report is
+created that contains, for each strategy-instrument pair and
+trading direction (long/short):
+- =NWin=: number of winning trades
+- =NTot=: number of total trades
+- =PctWin=: percentage of winning trades
+- =AvgWin=: average winner
+- =AvgLose=: average loser
+- =Kelly=: the resulting Kelly coefficient
+
+*REMEMBER: ANY TRADING YOU DO IS YOUR OWN RESPONSIBILITY.*
+*AGGREGATOR IS FOR ENTERTAINMENT ONLY!*
